@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# scripts/verify_stack.sh — verifies the dev stack from infra/docker-compose.yml.
+# Exit 0 only if every component answers correctly.
+# shellcheck disable=SC2015  # pass/ok/warn always return 0, so A && B || C is a safe if-else here
 set -uo pipefail
 FAILS=0
 ok()  { printf '  [OK]   %s\n' "$1"; }
@@ -17,9 +20,12 @@ code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:9000
 [ "$code" = "200" ] && ok "health/live 200" || bad "health/live -> $code"
 init_rc=$(docker inspect gov-minio-init --format '{{.State.ExitCode}}' 2>/dev/null || echo "?")
 [ "$init_rc" = "0" ] && ok "minio-init exited 0" || bad "minio-init exit code $init_rc (docker logs gov-minio-init)"
-buckets=$(docker exec gov-minio sh -c 'mc alias set chk http://localhost:9000 minioadmin minioadmin123 >/dev/null 2>&1 && mc ls chk' 2>/dev/null || true)
+MC_IMG="${MINIO_MC_IMAGE:-cgr.dev/chainguard/minio-client:latest}"
+buckets=$(docker run --rm --network governance-dev_default \
+  -e MC_HOST_chk=http://minioadmin:minioadmin123@minio:9000 \
+  "$MC_IMG" --config-dir /tmp/.mc ls chk 2>/dev/null || true)
 for b in governance-lake backups; do
-  printf '%s' "$buckets" | grep -q "$b/" && ok "bucket $b exists" || bad "bucket $b missing"
+  printf '%s' "$buckets" | grep -q "$b/" && ok "bucket $b exists" || bad "bucket $b missing (docker logs gov-minio-init)"
 done
 
 echo "== LocalStack (:4566)"
