@@ -13,6 +13,7 @@
     {"name": "event_type", "type": {"type": "enum", "name": "EventType", "symbols": ["AUTHORIZED", "CAPTURED", "SETTLED", "REFUNDED", "REVERSED"]}},
     {"name": "event_ts", "type": {"type": "long", "logicalType": "timestamp-millis"}},
     {"name": "created_at", "type": {"type": "long", "logicalType": "timestamp-millis"}},
-    {"name": "updated_at", "type": ["null", {"type": "long", "logicalType": "timestamp-millis"}], "default": null}
+    {"name": "updated_at", "type": ["null", {"type": "long", "logicalType": "timestamp-millis"}], "default": null},
+    {"name": "risk_score", "type": ["null", "double"], "default": null, "doc": "Fraud-model score; nullable with default so every older record stays readable"}
   ]
 }
