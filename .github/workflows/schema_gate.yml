@@ -1,0 +1,79 @@
+# .github/workflows/schema_gate.yml — REQUIRED status check `schema-gate`.
+#
+# Design notes (each one is a Day 1 correction to the original plan):
+#  * Runs on EVERY pull request to main; path relevance is decided INSIDE the
+#    job. A path-filtered required check never reports on unrelated PRs and
+#    blocks them forever ("Expected — Waiting for status to be reported").
+#  * The registry is started as a step from infra/ci/registry-compose.yml, not
+#    as a `services:` container, so (a) it only starts when contracts or gate
+#    infra changed, and (b) every way it can fail to come up flows through
+#    wait_fail_closed.sh and produces the FAILING CLOSED error.
+#  * Full git history (fetch-depth: 0): the gate replays every version of each
+#    schema on main so BACKWARD_TRANSITIVE is real, not BACKWARD in disguise.
+#  * Fail-closed: no cached compatibility verdict exists anywhere. A cached
+#    "compatible" can be stale, and a stale "compatible" is the 3am incident.
+#  * The job id AND name are exactly `schema-gate` — branch protection binds
+#    to this string byte-for-byte.
+name: schema-gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schema-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  schema-gate:
+    name: schema-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      REG: http://localhost:18081
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - name: Checkout (full history — the gate replays schema history)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect contract / gate changes (a detection error fails the job)
+        id: detect
+        run: scripts/ci/schema_gate.sh detect "$BASE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Nothing governed changed — pass without starting the registry
+        if: steps.detect.outputs.run == 'false'
+        run: echo "schema-gate — no change under contracts/schemas, contracts/registry.yml or gate infrastructure. Nothing to check."
+
+      - name: Set up Python
+        if: steps.detect.outputs.run == 'true'
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install gate dependencies
+        if: steps.detect.outputs.run == 'true'
+        run: python -m pip install --quiet -r requirements-ci.txt
+
+      - name: Self-test gate control flow (mock registry, no Docker)
+        if: steps.detect.outputs.run == 'true'
+        run: python -m pytest -q tests/gate
+
+      - name: Start hermetic Schema Registry (no production dependency)
+        if: steps.detect.outputs.run == 'true'
+        run: |
+          docker compose -f infra/ci/registry-compose.yml up -d \
+            || echo "::warning::registry stack did not start cleanly; the readiness probe decides (fail-closed)"
+
+      - name: Schema compatibility gate
+        if: steps.detect.outputs.run == 'true'
+        run: scripts/ci/schema_gate.sh check "$BASE_SHA"
+
+      - name: Registry logs (only on failure)
+        if: failure() && steps.detect.outputs.run == 'true'
+        run: docker compose -f infra/ci/registry-compose.yml logs --no-color --tail=120 || true

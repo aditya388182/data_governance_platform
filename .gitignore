@@ -1,0 +1,28 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+# Secrets (Day 2+: conf/keys.yml holds kek / fixtures_key / audit_hmac_key)
+conf/keys.yml
+.env
+*.pem
+# Spark / Delta local junk
+spark-warehouse/
+metastore_db/
+derby.log
+# Terraform (Day 6) — commit .terraform.lock.hcl, never state
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+# Local scratch
+*.log
+tmp/

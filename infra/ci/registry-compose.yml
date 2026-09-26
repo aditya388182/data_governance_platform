@@ -1,0 +1,49 @@
+# infra/ci/registry-compose.yml — the HERMETIC registry used by the schema gate.
+#
+# One definition, two users: the GitHub Actions job AND your local gate/drill
+# runs start exactly this stack, so "works locally" and "works in CI" mean the
+# same thing. It has zero dependency on any shared/production registry.
+#
+# Host port 18081 (not 8081) so it can run next to the dev stack in
+# infra/docker-compose.yml without colliding, and so a local gate run can never
+# write into your dev registry by accident.
+#
+# Changing this file is a gate-infrastructure change: the schema-gate job
+# re-runs its self-test against every dataset (that is how the Day 1
+# fail-closed sabotage PR exercises the gate).
+name: schema-gate-registry
+
+services:
+  gate-kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    hostname: gate-kafka
+    environment:
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@gate-kafka:9093"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://gate-kafka:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+
+  gate-schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.1
+    hostname: gate-schema-registry
+    depends_on:
+      - gate-kafka
+    restart: on-failure
+    ports:
+      - "18081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: gate-schema-registry
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "PLAINTEXT://gate-kafka:9092"
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+      SCHEMA_REGISTRY_HEAP_OPTS: "-Xms128m -Xmx256m"

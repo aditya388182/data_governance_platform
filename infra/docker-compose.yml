@@ -1,0 +1,137 @@
+# infra/docker-compose.yml — Project 4 dev stack (Days 1-6)
+#
+#   kafka            KRaft, dual listener: kafka:9092 (containers) / localhost:29092 (host)
+#   schema-registry  localhost:8081 — the RUNTIME registry (producers, Day 4+)
+#   minio            localhost:9000 (S3 API) / :9001 (console)
+#   minio-init       one-shot: creates buckets governance-lake, backups
+#   localstack       localhost:4566 — S3 + DynamoDB for Terraform remote state (Day 6)
+#
+# The schema GATE does not use this stack; it uses infra/ci/registry-compose.yml
+# (port 18081).
+#
+# IMAGE NOTES (checked Sept 2026 — both upstreams changed distribution):
+#  * MinIO: minio/minio and minio/mc were removed from Docker Hub (~Sept 12 2026).
+#    Historical releases still pull from quay.io. The server image bundles `mc`,
+#    so minio-init reuses it (no separate mc image). Override with MINIO_IMAGE.
+#  * LocalStack: since 2026.03.0 the latest image requires LOCALSTACK_AUTH_TOKEN.
+#    We pin an older community tag (no token). If that pull fails, get a free
+#    Hobby/Student token and run with:
+#      LOCALSTACK_IMAGE=localstack/localstack:latest LOCALSTACK_AUTH_TOKEN=... docker compose ...
+#
+# Memory-tuned for a 16 GB machine (Docker Desktop: allocate >= 8 GB).
+name: governance-dev
+
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    hostname: kafka
+    container_name: gov-kafka
+    ports:
+      - "29092:29092"
+    environment:
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx1g"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.1
+    hostname: schema-registry
+    container_name: gov-schema-registry
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: on-failure
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "PLAINTEXT://kafka:9092"
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 1
+      SCHEMA_REGISTRY_HEAP_OPTS: "-Xms256m -Xmx512m"
+
+  minio:
+    image: ${MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z}
+    container_name: gov-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin            # local-only credentials
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  minio-init:
+    image: ${MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z}
+    container_name: gov-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        mc alias set gov http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" >/dev/null
+        mc mb --ignore-existing gov/governance-lake gov/backups
+        echo "buckets:"; mc ls gov
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    restart: "no"
+
+  localstack:
+    image: ${LOCALSTACK_IMAGE:-localstack/localstack:4.12}
+    container_name: gov-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: "s3,dynamodb"
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN:-}
+    volumes:
+      - localstack-data:/var/lib/localstack
+
+  # ---- Day 4 / Day 6: uncomment when those stages begin ----------------------
+  # prometheus:
+  #   image: prom/prometheus:v2.53.0
+  #   container_name: gov-prometheus
+  #   ports: ["9090:9090"]
+  #   volumes:
+  #     - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #     - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+  # pushgateway:
+  #   image: prom/pushgateway:v1.9.0
+  #   container_name: gov-pushgateway
+  #   ports: ["9091:9091"]
+  # grafana:
+  #   image: grafana/grafana:11.1.0
+  #   container_name: gov-grafana
+  #   ports: ["3000:3000"]
+  #   environment: { GF_SECURITY_ADMIN_PASSWORD: admin }
+
+volumes:
+  minio-data:
+  localstack-data:

@@ -1,0 +1,5 @@
+# Minimal dependencies for the schema-gate CI job (keep this list short: it is
+# installed on every gated PR).
+pyyaml==6.0.2
+avro==1.12.0
+pytest==8.3.3
