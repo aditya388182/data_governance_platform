@@ -1,23 +1,4 @@
 #!/usr/bin/env python3
-"""Compatibility taxonomy drill (Project 4, Day 1, Block 1.10).
-
-Runs every Avro evolution case against a REAL registry and records the
-registry's ACTUAL verdicts into contracts/compat_matrix.md. Nothing in the
-table is typed by hand. Each case is judged under three modes:
-
-  BACKWARD_TRANSITIVE  the contract's mode (new reader vs every old writer)
-  BACKWARD             new reader vs the latest writer only
-  FORWARD              latest OLD reader vs the new writer — what an
-                       un-upgraded consumer experiences when producers deploy first
-
-Each verdict is compared with an oracle (Avro reader/writer resolution rules,
-cross-checked with Apache Avro's reference checker). A mismatch is printed and
-marked in the table, and the script exits 1 — a disagreement is a finding to
-investigate, never something to paper over.
-
-Usage:  REG=http://localhost:18081 python scripts/compat_matrix_drill.py [--out contracts/compat_matrix.md]
-Subjects are created under drill.<run-id>.* and deleted afterwards.
-"""
 from __future__ import annotations
 
 import argparse

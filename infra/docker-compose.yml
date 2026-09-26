@@ -1,24 +1,3 @@
-# infra/docker-compose.yml — Project 4 dev stack (Days 1-6)
-#
-#   kafka            KRaft, dual listener: kafka:9092 (containers) / localhost:29092 (host)
-#   schema-registry  localhost:8081 — the RUNTIME registry (producers, Day 4+)
-#   minio            localhost:9000 (S3 API) / :9001 (console)
-#   minio-init       one-shot: creates buckets governance-lake, backups
-#   localstack       localhost:4566 — S3 + DynamoDB for Terraform remote state (Day 6)
-#
-# The schema GATE does not use this stack; it uses infra/ci/registry-compose.yml
-# (port 18081).
-#
-# IMAGE NOTES (checked Sept 2026 — both upstreams changed distribution):
-#  * MinIO: minio/minio and minio/mc were removed from Docker Hub (~Sept 12 2026).
-#    Historical releases still pull from quay.io. The server image bundles `mc`,
-#    so minio-init reuses it (no separate mc image). Override with MINIO_IMAGE.
-#  * LocalStack: since 2026.03.0 the latest image requires LOCALSTACK_AUTH_TOKEN.
-#    We pin an older community tag (no token). If that pull fails, get a free
-#    Hobby/Student token and run with:
-#      LOCALSTACK_IMAGE=localstack/localstack:latest LOCALSTACK_AUTH_TOKEN=... docker compose ...
-#
-# Memory-tuned for a 16 GB machine (Docker Desktop: allocate >= 8 GB).
 name: governance-dev
 
 services:
@@ -68,8 +47,9 @@ services:
       SCHEMA_REGISTRY_HEAP_OPTS: "-Xms256m -Xmx512m"
 
   minio:
-    image: ${MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z}
+    image: ${MINIO_IMAGE:-cgr.dev/chainguard/minio:latest}
     container_name: gov-minio
+    user: "0:0"        # dev only: sidesteps named-volume ownership vs the image's uid 65532
     command: ["server", "/data", "--console-address", ":9001"]
     ports:
       - "9000:9000"
@@ -79,29 +59,20 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin123
     volumes:
       - minio-data:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
+    # no healthcheck: the image has no shell/curl/mc (distroless). See header.
 
   minio-init:
-    image: ${MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z}
+    image: ${MINIO_MC_IMAGE:-cgr.dev/chainguard/minio-client:latest}
     container_name: gov-minio-init
     depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        set -e
-        mc alias set gov http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" >/dev/null
-        mc mb --ignore-existing gov/governance-lake gov/backups
-        echo "buckets:"; mc ls gov
+      - minio
+    # No shell in this image: the alias comes from MC_HOST_<alias>, and one
+    # `mb` call creates both buckets. It exits non-zero while MinIO is still
+    # starting, and restart: on-failure retries until it succeeds (exit 0).
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
-    restart: "no"
+      MC_HOST_gov: "http://minioadmin:minioadmin123@minio:9000"
+    command: ["--config-dir", "/tmp/.mc", "mb", "--ignore-existing", "gov/governance-lake", "gov/backups"]
+    restart: "on-failure:30"
 
   localstack:
     image: ${LOCALSTACK_IMAGE:-localstack/localstack:4.12}

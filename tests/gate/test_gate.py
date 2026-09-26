@@ -1,16 +1,3 @@
-"""Control-flow tests for the schema gate. No Docker: a mock registry answers
-with Avro-reference compatibility verdicts and injectable faults.
-
-What these prove (each is a property the plan claims):
-  * pass on compatible, fail on breaking, fail on invalid
-  * FAIL CLOSED on: registry down, registry 5xx, mode that did not apply
-  * BACKWARD_TRANSITIVE is enforced against replayed git history (PR C)
-  * the mode in force on main wins over a PR's edit to registry.yml
-  * detect: docs-only PRs pass without a registry; detection errors are fatal
-  * ungoverned schema files and dataset removals are refused
-  * throwaway subjects are cleaned up
-  * the taxonomy drill's oracle agrees with the reference checker
-"""
 import shutil
 import sys
 from pathlib import Path

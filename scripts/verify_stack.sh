@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# scripts/verify_stack.sh — verifies the dev stack from infra/docker-compose.yml.
-# Exit 0 only if every component answers correctly.
-# shellcheck disable=SC2015  # pass/ok/warn always return 0, so A && B || C is a safe if-else here
 set -uo pipefail
 FAILS=0
 ok()  { printf '  [OK]   %s\n' "$1"; }

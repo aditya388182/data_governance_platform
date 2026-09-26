@@ -1,18 +1,4 @@
 #!/usr/bin/env bash
-# scripts/ci/wait_fail_closed.sh [REGISTRY_URL]
-#
-# Readiness probe for the hermetic Schema Registry. Returns 0 once
-# GET <REG>/subjects answers with a JSON array. On timeout it prints
-#   ::error title=schema-gate::Registry failed to start — FAILING CLOSED ...
-# and exits 1.
-#
-# FAIL-CLOSED IS A PROPERTY, NOT A PHRASE: there is deliberately no fallback
-# of any kind here — no cached verdict, no "warn and continue". A cached
-# "compatible" can be stale, and a stale "compatible" is exactly the 3am
-# incident this project exists to prevent. Registry unavailable == red build.
-#
-# Env: REGISTRY_WAIT_TIMEOUT (seconds, default 150), REGISTRY_WAIT_INTERVAL (default 3)
-# Portable: bash 3.2+ (macOS default) and bash 5 (Ubuntu / GitHub runners).
 set -euo pipefail
 
 REG="${1:-${REG:-http://localhost:18081}}"
