@@ -2,14 +2,15 @@ import shutil
 import sys
 from pathlib import Path
 
-from conftest import REPO, run
+from conftest import DATA, REPO, run
 
 CC = str(REPO / "scripts/ci/compat_check.sh")
 WAIT = str(REPO / "scripts/ci/wait_fail_closed.sh")
-S = REPO / "contracts/schemas/payments_transactions.avsc"
-A = REPO / "drills/day1/pr_a_add_risk_score.avsc"
-B = REPO / "drills/day1/pr_b_rename_currency.avsc"
-C = REPO / "drills/day1/pr_c_transitive_drop_default.avsc"
+# Frozen test universe — never the live contracts (see tests/gate/data/README.md)
+S = DATA / "payments_v1.avsc"
+A = DATA / "pr_a.avsc"
+B = DATA / "pr_b.avsc"
+C = DATA / "pr_c.avsc"
 
 
 def hist(tmp_path, *files):
@@ -20,7 +21,7 @@ def hist(tmp_path, *files):
     return str(d)
 
 
-# ---------------------------------------------------------------- wait_fail_closed
+#  wait_fail_closed
 def test_wait_ready(registry):
     r = run([WAIT, registry.url])
     assert r.returncode == 0 and "registry ready" in r.stdout
@@ -32,7 +33,7 @@ def test_wait_fails_closed_when_registry_down():
     assert "FAILING CLOSED" in r.stdout and "::error" in r.stdout
 
 
-# ---------------------------------------------------------------- compat_check verdicts
+#  compat_check verdicts
 def test_nullable_add_is_compatible(registry, tmp_path):
     r = run([CC, "payments.public.transactions-value", str(A), "BACKWARD_TRANSITIVE", hist(tmp_path, S)],
             env_extra={"REG": registry.url})
@@ -77,7 +78,7 @@ def test_invalid_avro_fails(registry, tmp_path):
     assert r.returncode == 1 and "INVALID SCHEMA" in r.stdout
 
 
-# ---------------------------------------------------------------- fail-closed paths
+#  fail-closed paths
 def test_registry_5xx_fails_closed(registry, tmp_path):
     registry.state.faults = {"register_status": 500}
     r = run([CC, "t-value", str(A), "BACKWARD_TRANSITIVE", hist(tmp_path, S)], env_extra={"REG": registry.url})
@@ -101,7 +102,7 @@ def test_throwaway_subjects_are_deleted(registry, tmp_path):
     assert registry.live_subjects() == []
 
 
-# ---------------------------------------------------------------- orchestrator (real git history)
+#  orchestrator (real git history)
 def _cp(src, root, rel="contracts/schemas/payments_transactions.avsc"):
     shutil.copy(src, root / rel)
 
@@ -214,7 +215,7 @@ def test_lint_rejects_mode_none(gate_repo):
     assert r.returncode == 1 and "NONE is not allowed" in r.stderr
 
 
-# ---------------------------------------------------------------- the drill's oracle
+#  the drill's oracle
 def test_drill_oracle_matches_reference(registry, tmp_path):
     out = tmp_path / "matrix.md"
     r = run([sys.executable, str(REPO / "scripts/compat_matrix_drill.py"), "--registry", registry.url,

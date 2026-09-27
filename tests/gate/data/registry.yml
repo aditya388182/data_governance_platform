@@ -12,13 +12,6 @@
 # old mode, so nobody can weaken the mode and ship a breaking change in the
 # same diff. A mode change takes effect only after it merges on its own.
 #
-# fixture: the committed, anonymized CI sample the semantic gate (ge-gate)
-# validates. It is the producer's declared sample output: a producer that changes
-# what it emits regenerates it (scripts/make_fixture.py) in the same PR.
-#
-# The catalog table name of a dataset is the last segment of its delta_path
-# (transactions, customers): pii_catalog.yml keys are "<table>.<column>".
-#
 # delta_path values are CANONICAL. Every later component (consumers,
 # lineage.json, seed, checkpoints, erasure) must reference these exact strings.
 version: 1
@@ -31,7 +24,6 @@ datasets:
     compatibility: BACKWARD_TRANSITIVE
     ge_suite: ge/suites/payments_transactions.yml
     delta_path: s3a://governance-lake/transactions
-    fixture: fixtures/payments_transactions_sample.parquet
 
   customers:
     schema: contracts/schemas/customers.avsc
@@ -41,4 +33,3 @@ datasets:
     compatibility: BACKWARD_TRANSITIVE
     ge_suite: ge/suites/customers.yml
     delta_path: s3a://governance-lake/customers
-    fixture: fixtures/customers_sample.parquet

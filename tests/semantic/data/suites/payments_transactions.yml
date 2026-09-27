@@ -1,0 +1,52 @@
+# the SEMANTIC contract of payments.transactions
+#
+# Great Expectations 0.18 ExpectationSuite, stored as YAML and versioned exactly
+# like the Avro schema: changing a threshold is a PR through the same
+# protection. Nobody edits expectations in a UI.
+#
+# Avro says amount_minor is a long; only this layer says it cannot be negative.
+# Columns listed in pii_catalog.yml are tokenized in fixtures and encrypted at
+# rest, so only presence/nullness is checkable here; value-format checks on PII
+# belong at the producer, before encryption.
+expectation_suite_name: payments_transactions
+meta:
+  contract: payments.transactions
+  owner: payments-platform-team
+  great_expectations_version: 0.18.22
+expectations:
+  - expectation_type: expect_table_row_count_to_be_between
+    kwargs: {min_value: 1}
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs: {column: transaction_id}
+  - expectation_type: expect_column_values_to_be_unique
+    kwargs: {column: transaction_id}
+  - expectation_type: expect_column_values_to_match_regex
+    kwargs:
+      column: transaction_id
+      regex: '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+    meta: {why: "UUID4 — producers must not invent their own id formats"}
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs: {column: merchant_id}
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs: {column: customer_id}
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs: {column: amount_minor}
+  - expectation_type: expect_column_values_to_be_between
+    kwargs: {column: amount_minor, min_value: 0, max_value: 100000000}
+    meta: {why: "minor units; negative amounts are refunds modelled as event_type, never as sign"}
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs: {column: currency}
+  - expectation_type: expect_column_value_lengths_to_equal
+    kwargs: {column: currency, value: 3}
+  - expectation_type: expect_column_values_to_be_in_set
+    kwargs: {column: currency, value_set: [USD, EUR, GBP, JPY, CAD, AUD, INR, CHF]}
+  - expectation_type: expect_column_values_to_be_in_set
+    kwargs: {column: status, value_set: [PENDING, AUTHORIZED, CAPTURED, SETTLED, DECLINED, REFUNDED, REVERSED]}
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs: {column: event_ts}
+  - expectation_type: expect_column_values_to_be_between
+    kwargs: {column: risk_score, min_value: 0.0, max_value: 1.0}
+    meta: {why: "nullable field: nulls are ignored, present values must be a probability"}
+  - expectation_type: expect_column_pair_values_a_to_be_greater_than_b
+    kwargs: {column_A: updated_at, column_B: created_at, or_equal: true, ignore_row_if: either_value_is_missing}
+    meta: {why: "cross-field rule no schema can express"}

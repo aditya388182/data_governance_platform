@@ -80,7 +80,7 @@ class _Handler(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             return {}
 
-    # ---------------- GET ----------------
+    #  GET 
     def do_GET(self):
         st = self.state
         path = urlparse(self.path).path
@@ -103,7 +103,7 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._send(200, [v["version"] for v in vs])
         return self._send(404, {"error_code": 404, "message": "not found"})
 
-    # ---------------- PUT ----------------
+    #  PUT 
     def do_PUT(self):
         st = self.state
         path = urlparse(self.path).path
@@ -121,7 +121,7 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._send(200, {"compatibility": mode})
         return self._send(404, {"error_code": 404, "message": "not found"})
 
-    # ---------------- POST ----------------
+    #  POST 
     def do_POST(self):
         st = self.state
         u = urlparse(self.path)
@@ -178,7 +178,7 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._send(200, out)
         return self._send(404, {"error_code": 404, "message": "not found"})
 
-    # ---------------- DELETE ----------------
+    #  DELETE 
     def do_DELETE(self):
         st = self.state
         u = urlparse(self.path)

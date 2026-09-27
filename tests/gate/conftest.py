@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from mock_registry import MockRegistry  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
+DATA = Path(__file__).resolve().parent / "data"   # frozen test universe (see data/README.md)
 
 
 @pytest.fixture()
@@ -38,15 +39,20 @@ def gate_repo(tmp_path):
     with one bootstrap commit on main (schema version 1)."""
     root = tmp_path / "repo"
     root.mkdir()
-    for rel in ("contracts/registry.yml", "contracts/schemas", "scripts/ci", "infra/ci",
-                ".github/workflows/schema_gate.yml", "drills/day1"):
+    # Code under test comes from the live repo...
+    for rel in ("scripts/ci", "infra/ci", ".github/workflows/schema_gate.yml"):
         src = REPO / rel
         dst = root / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         if src.is_dir():
-            shutil.copytree(src, dst)
+            shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__"))
         else:
             shutil.copy2(src, dst)
+    # ...contracts come from the FROZEN universe, never from live contracts/.
+    (root / "contracts/schemas").mkdir(parents=True)
+    shutil.copy2(DATA / "registry.yml", root / "contracts/registry.yml")
+    shutil.copy2(DATA / "payments_v1.avsc", root / "contracts/schemas/payments_transactions.avsc")
+    shutil.copy2(DATA / "customers.avsc", root / "contracts/schemas/customers.avsc")
     (root / "README.md").write_text("test repo\n")
 
     def git(*args):

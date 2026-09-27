@@ -1,0 +1,55 @@
+# REQUIRED status check `pii-gate` (the compliance layer).
+# Runs on EVERY PR (decision D3). Detection patterns are applied as they are on
+# main; unclassified PII is default-deny.
+name: pii-gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pii-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pii-gate:
+    name: pii-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - name: Checkout (full history for the merge-base)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect schema / catalog changes (a detection error fails the job)
+        id: detect
+        run: scripts/ci/pii_gate.sh detect "$BASE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Nothing classified or classifiable changed — pass
+        if: steps.detect.outputs.run == 'false'
+        run: echo "pii-gate — no change to schemas, registry, PII catalog or gate code. Nothing to check."
+
+      - name: Set up Python
+        if: steps.detect.outputs.run == 'true'
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install gate dependencies
+        if: steps.detect.outputs.run == 'true'
+        run: python -m pip install --quiet -r requirements-ci.txt
+
+      - name: Self-test PII gate logic
+        if: steps.detect.outputs.run == 'true'
+        run: python -m pytest -q tests/pii
+
+      - name: PII classification gate
+        if: steps.detect.outputs.run == 'true'
+        run: scripts/ci/pii_gate.sh check "$BASE_SHA"
