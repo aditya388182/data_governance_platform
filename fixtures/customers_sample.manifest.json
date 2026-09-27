@@ -1,0 +1,66 @@
+{
+  "dataset": "customers",
+  "table": "customers",
+  "schema": "contracts/schemas/customers.avsc",
+  "generator": "make_fixture.py/2",
+  "seed": 42,
+  "source_rows": 50000,
+  "stratify_by": "country",
+  "fraction": 0.01,
+  "min_per_stratum": 5,
+  "strata": {
+    "AU": {
+      "source": 50,
+      "sampled": 5,
+      "bernoulli_miss_probability": 0.605006
+    },
+    "CA": {
+      "source": 450,
+      "sampled": 5,
+      "bernoulli_miss_probability": 0.01086
+    },
+    "DE": {
+      "source": 5000,
+      "sampled": 50,
+      "bernoulli_miss_probability": 0.0
+    },
+    "FR": {
+      "source": 3000,
+      "sampled": 30,
+      "bernoulli_miss_probability": 0.0
+    },
+    "GB": {
+      "source": 8000,
+      "sampled": 80,
+      "bernoulli_miss_probability": 0.0
+    },
+    "IN": {
+      "source": 2500,
+      "sampled": 25,
+      "bernoulli_miss_probability": 0.0
+    },
+    "JP": {
+      "source": 1000,
+      "sampled": 10,
+      "bernoulli_miss_probability": 4.3e-05
+    },
+    "US": {
+      "source": 30000,
+      "sampled": 300,
+      "bernoulli_miss_probability": 0.0
+    }
+  },
+  "sampled_rows": 505,
+  "injected_bad_rows": [],
+  "rows": 505,
+  "anonymized_columns": [
+    "customer_id",
+    "email",
+    "full_name",
+    "ssn"
+  ],
+  "token_format": "hex(HMAC-SHA256(fixtures_key, '<column>:<value>'))",
+  "fixtures_key_fingerprint": "1d27c8d08265",
+  "avro_valid_rows": 505,
+  "content_sha256": "d7e06d0b70c63168e4325aff75e0f490f7f5cfe59bbe77a7cc7cfaec8a898af8"
+}

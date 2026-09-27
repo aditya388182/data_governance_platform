@@ -1,0 +1,64 @@
+{
+  "dataset": "payments.transactions",
+  "table": "transactions",
+  "schema": "contracts/schemas/payments_transactions.avsc",
+  "generator": "make_fixture.py/2",
+  "seed": 42,
+  "source_rows": 200000,
+  "stratify_by": "currency",
+  "fraction": 0.01,
+  "min_per_stratum": 5,
+  "strata": {
+    "AUD": {
+      "source": 3000,
+      "sampled": 30,
+      "bernoulli_miss_probability": 0.0
+    },
+    "CAD": {
+      "source": 5000,
+      "sampled": 50,
+      "bernoulli_miss_probability": 0.0
+    },
+    "CHF": {
+      "source": 40,
+      "sampled": 5,
+      "bernoulli_miss_probability": 0.668972
+    },
+    "EUR": {
+      "source": 24000,
+      "sampled": 240,
+      "bernoulli_miss_probability": 0.0
+    },
+    "GBP": {
+      "source": 16000,
+      "sampled": 160,
+      "bernoulli_miss_probability": 0.0
+    },
+    "INR": {
+      "source": 1960,
+      "sampled": 20,
+      "bernoulli_miss_probability": 0.0
+    },
+    "JPY": {
+      "source": 10000,
+      "sampled": 100,
+      "bernoulli_miss_probability": 0.0
+    },
+    "USD": {
+      "source": 140000,
+      "sampled": 1400,
+      "bernoulli_miss_probability": 0.0
+    }
+  },
+  "sampled_rows": 2005,
+  "injected_bad_rows": [],
+  "rows": 2005,
+  "anonymized_columns": [
+    "customer_id",
+    "merchant_id"
+  ],
+  "token_format": "hex(HMAC-SHA256(fixtures_key, '<column>:<value>'))",
+  "fixtures_key_fingerprint": "1d27c8d08265",
+  "avro_valid_rows": 2005,
+  "content_sha256": "f5b961ae835a9520bc3721e69ba226ec41754a9e3dbfdb724e88c68f874bc511"
+}
