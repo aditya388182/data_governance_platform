@@ -1,17 +1,3 @@
-"""A small stand-in for Confluent Schema Registry, used ONLY to test the gate's
-control flow without Docker: HTTP codes, history replay, mode read-back,
-fail-closed paths, subject cleanup.
-
-Compatibility verdicts come from Apache Avro's reference checker
-(avro.compatibility), the same reader/writer algorithm the Java registry uses.
-This is NOT a substitute for the real registry: the CI job always judges PRs
-with the real cp-schema-registry image. Its job is to prove the *gate logic*
-does the right thing for every response the registry can give.
-
-Fault injection (tests only): POST /__faults with a JSON object, e.g.
-  {"register_status": 500}         -> POST /subjects/*/versions returns 500
-  {"config_echo": "NONE"}           -> GET /config/* lies about the mode
-"""
 from __future__ import annotations
 
 import json
@@ -94,7 +80,7 @@ class _Handler(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             return {}
 
-    # ---------------- GET ----------------
+    #  GET 
     def do_GET(self):
         st = self.state
         path = urlparse(self.path).path
@@ -117,7 +103,7 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._send(200, [v["version"] for v in vs])
         return self._send(404, {"error_code": 404, "message": "not found"})
 
-    # ---------------- PUT ----------------
+    #  PUT 
     def do_PUT(self):
         st = self.state
         path = urlparse(self.path).path
@@ -135,7 +121,7 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._send(200, {"compatibility": mode})
         return self._send(404, {"error_code": 404, "message": "not found"})
 
-    # ---------------- POST ----------------
+    #  POST 
     def do_POST(self):
         st = self.state
         u = urlparse(self.path)
@@ -192,7 +178,7 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._send(200, out)
         return self._send(404, {"error_code": 404, "message": "not found"})
 
-    # ---------------- DELETE ----------------
+    #  DELETE 
     def do_DELETE(self):
         st = self.state
         u = urlparse(self.path)

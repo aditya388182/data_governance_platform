@@ -1,16 +1,14 @@
-# Project 4 — local dev environment (Python 3.11 recommended; 3.10 also OK).
+# local dev environment (Python 3.11 recommended; 3.10 also OK).
 # Day 1 needs only the first block. The rest is installed on Day 1 anyway so
 # dependency conflicts surface today, not in the middle of Day 4.
 # PINNED ON PURPOSE: Great Expectations 0.18.x (never 1.x — its API differs);
 # CI pins the same versions.
 
-# --- Day 1: gate tooling + drill + gate self-tests ---
 pyyaml==6.0.2
 requests==2.32.3
 avro==1.12.0
 pytest==8.3.3
 
-# --- Days 2-6 ---
 pyspark==3.5.1
 delta-spark==3.1.0
 great_expectations==0.18.22
@@ -18,6 +16,7 @@ great_expectations==0.18.22
 # resolver picks pandas 3.x, which GE 0.18 was never tested against.
 pandas==2.1.4
 numpy==1.26.4
+pyarrow==15.0.2          # Parquet fixtures (Day 2); 15.x keeps numpy 1.26 compatibility
 cryptography==43.0.3
 confluent-kafka==2.5.3
 boto3==1.35.54

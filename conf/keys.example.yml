@@ -1,0 +1,6 @@
+# shape only. The real file is conf/keys.yml (gitignored),
+# created by: python scripts/init_keys.py
+# Three DISTINCT 32-byte keys, hex-encoded (64 hex chars each).
+kek: "<64 hex chars — wraps per-subject DEKs (Day 4)>"
+fixtures_key: "<64 hex chars — HMAC-anonymizes committed fixtures (Day 2)>"
+audit_hmac_key: "<64 hex chars — hashes subject ids in the audit table (Day 5)>"

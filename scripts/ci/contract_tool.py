@@ -1,27 +1,4 @@
 #!/usr/bin/env python3
-"""Contract tooling for the schema gate (Project 4, Stage 0).
-
-  lint  [--registry contracts/registry.yml]
-        Validates the contract registry. Fails (exit 1) on:
-          - missing required keys, unknown/NONE compatibility modes
-          - schema files that are missing, not JSON, not an Avro record,
-            or have duplicate field names
-          - duplicate subjects / schema paths / delta_paths
-          - any *.avsc under contracts/schemas/ that no dataset references
-            (an ungoverned schema is default-deny, same idea as the PII gate)
-
-  plan  --base-registry FILE --changed-files FILE [--registry contracts/registry.yml]
-        Decides WHAT the gate checks and UNDER WHICH MODE. Prints TSV rows:
-          dataset  subject  schema_path  history_path  mode  reason
-        - mode comes from the BASE branch (the contract in force); a PR that
-          edits `compatibility:` gets ::warning:: and is judged by the old mode
-        - a dataset is selected if its schema file changed, or (self-test) if
-          registry.yml or any gate infrastructure changed
-        - removing a governed dataset from the registry is refused (exit 1)
-
-Stdout carries data only; human-readable notes and ::warning:: / ::error::
-annotations go to stderr.
-"""
 from __future__ import annotations
 
 import argparse

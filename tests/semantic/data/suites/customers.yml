@@ -1,0 +1,29 @@
+# the SEMANTIC contract of customers
+# email, ssn and full_name are classified PII (tokenized in fixtures, encrypted
+# or tokenized at rest), so only non-null is checkable here.
+expectation_suite_name: customers
+meta:
+  contract: customers
+  owner: customer-data-team
+  great_expectations_version: 0.18.22
+expectations:
+  - expectation_type: expect_table_row_count_to_be_between
+    kwargs: {min_value: 1}
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs: {column: customer_id}
+  - expectation_type: expect_column_values_to_be_unique
+    kwargs: {column: customer_id}
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs: {column: email}
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs: {column: ssn}
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs: {column: full_name}
+  - expectation_type: expect_column_value_lengths_to_equal
+    kwargs: {column: country, value: 2}
+  - expectation_type: expect_column_values_to_be_in_set
+    kwargs: {column: country, value_set: [US, GB, DE, FR, IN, JP, CA, AU]}
+  - expectation_type: expect_column_values_to_not_be_null
+    kwargs: {column: created_at}
+  - expectation_type: expect_column_pair_values_a_to_be_greater_than_b
+    kwargs: {column_A: updated_at, column_B: created_at, or_equal: true, ignore_row_if: either_value_is_missing}

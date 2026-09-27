@@ -1,0 +1,42 @@
+# the compliance layer of the contract (Project 4, Stage 1)
+#
+# Every column that identifies a person is classified here, with the treatment
+# applied at write time (Day 4) and in committed fixtures (Day 2).
+#
+# Keys are "<table>.<column>", where <table> is the last segment of the
+# dataset's delta_path in contracts/registry.yml.
+#
+#   class      DIRECT_IDENTIFIER | QUASI_IDENTIFIER | NOT_PII
+#   treatment  ENCRYPT_AESGCM  — plaintext must come back to authorized readers
+#              TOKENIZE_HMAC   — pseudonymous joinability is enough; one-way
+#              NONE            — only allowed with class NOT_PII (+ a reason)
+#
+# pii-gate (required check) fails any schema field whose NAME matches a
+# detection pattern below but has no entry here. Unclassified is default-deny.
+# NOT_PII entries are the reviewed escape hatch for false positives
+# (e.g. merchant_name) and must state a reason.
+#
+# The gate applies the detection patterns AS THEY ARE ON main, so a PR cannot
+# weaken detection and add a PII field in the same diff (same idea as the
+# schema gate reading the compatibility mode from main).
+
+subject_key: customer_id   # the erasure key column; must exist in every table holding PII
+
+columns:
+  customers.email:          {class: DIRECT_IDENTIFIER, treatment: ENCRYPT_AESGCM}
+  customers.ssn:            {class: DIRECT_IDENTIFIER, treatment: TOKENIZE_HMAC}
+  customers.full_name:      {class: DIRECT_IDENTIFIER, treatment: ENCRYPT_AESGCM}
+  transactions.merchant_id: {class: QUASI_IDENTIFIER,  treatment: TOKENIZE_HMAC}
+
+detection:
+  # Case-insensitive regexes searched in each top-level Avro field name.
+  # Token-anchored where a bare substring would over-match (zip_code must not
+  # match "ip", filename must not need review twice, etc.).
+  name_patterns:
+    - 'e_?mail'
+    - '(^|_)ssn($|_)|social_?security|national_?id|passport|tax_?id'
+    - 'phone|mobile|msisdn'
+    - '(^|_)((first|last|middle|full|given|family|legal|user)_?)?name($|_)'
+    - 'address|street|postal|(^|_)zip($|_)'
+    - '(^|_)dob($|_)|birth'
+    - '(^|_)ip($|_)|ip_?addr|ipv[46]'

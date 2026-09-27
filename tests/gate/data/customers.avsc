@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "Customer",
+  "namespace": "com.governance.crm",
+  "doc": "Governed contract for subject crm.public.customers-value. PII columns are classified in contracts/pii_catalog.yml (Day 2) and encrypted/tokenized at write (Day 4).",
+  "fields": [
+    {"name": "customer_id", "type": "string", "doc": "Data-subject key (pii_catalog subject_key)"},
+    {"name": "email", "type": "string"},
+    {"name": "ssn", "type": "string"},
+    {"name": "full_name", "type": "string"},
+    {"name": "country", "type": "string", "doc": "ISO-3166 alpha-2"},
+    {"name": "created_at", "type": {"type": "long", "logicalType": "timestamp-millis"}},
+    {"name": "updated_at", "type": ["null", {"type": "long", "logicalType": "timestamp-millis"}], "default": null}
+  ]
+}
