@@ -1,24 +1,4 @@
 #!/usr/bin/env bash
-# scripts/ci/schema_gate.sh detect|check [BASE_REF]
-#
-# The schema-gate orchestrator. The GitHub workflow is a thin wrapper around
-# this script, so the gate behaves identically in CI and on your laptop.
-#
-#   detect BASE  -> prints run=true|false (append to $GITHUB_OUTPUT in CI).
-#                   Exits NON-ZERO if it cannot compute the diff: a detection
-#                   error must fail the job, never quietly skip the gate.
-#   check  BASE  -> lint contracts, plan datasets, replay each schema's git
-#                   history from the merge-base, run compat_check.sh.
-#                   Exit 0 = all compatible, 1 = breaking/invalid, 2 = infra (fail-closed)
-#
-# Why the workflow runs on EVERY PR and decides here instead of using
-# `on.pull_request.paths`: a path-filtered workflow never reports a status on
-# PRs outside its paths, and a *required* check that never reports blocks the
-# PR forever ("Expected — Waiting for status to be reported").
-#
-# BASE defaults to origin/main. Locally, the proposed schema is your WORKING
-# TREE (uncommitted edits included); in CI the working tree == the PR merge commit.
-# Env: REG (default http://localhost:18081), PYTHON (default python3)
 set -euo pipefail
 
 CMD="${1:?usage: schema_gate.sh detect|check [BASE_REF]}"
