@@ -119,7 +119,7 @@ def main() -> int:
                     blocking.append({"consumer": consumer, "team": team, "dataset": ds, "fields": missing,
                                      "at": f"consumers/{consumer}/{first_use.path}:{first_use.line}" if first_use else None})
                 else:
-                    status = f"ACKed on main for #{pr}"
+                    status = f"✅ ACKed on main for #{pr}"
             refs = ", ".join(f"`{loc}` ({p})" for loc, p in u.refs[:3])
             if affected:
                 why = "; ".join(f"`{f}` at {', '.join(f'`{l}`' for l in locs[:3])}" for f, locs in sorted(hits.items()))
