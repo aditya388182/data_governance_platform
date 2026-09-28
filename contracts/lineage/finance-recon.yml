@@ -1,0 +1,13 @@
+# finance-recon's registration as a consumer (Project 4, Stage 2).
+#
+# Owned by the CONSUMER team via CODEOWNERS: in an organization only @finance-data-team can
+# approve changes to this file, which is what makes an ACK below a real sign-off.
+consumer: finance-recon
+team: "@finance-data-team"
+repo: consumers/finance-recon        # vendored stand-in; production: https://github.com/<org>/finance-recon
+reads:
+  - payments.transactions    # Delta table (daily batch reconciliation)
+# acks: PR number -> sign-offs for field removals in THAT PR. impact-bot reads acks
+# from main only, so an ACK counts once this file's change has merged.
+# Add one with: python scripts/ack.py finance-recon --pr <N> --fields <f1,f2> --reason "..."
+acks: {}

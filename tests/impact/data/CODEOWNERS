@@ -1,0 +1,22 @@
+# CODEOWNERS — who must review what (Project 4, Stage 2).
+#
+# SOLO-ACCOUNT POSTURE: every rule names @OWNER, which Block 3.2 replaces with your
+# GitHub login (the only real reviewer on a personal account). The comment above each
+# rule names the owners it would have in an organization, where branch protection adds
+# "Require review from Code Owners" so a consumer's ACK can only be approved by that
+# consumer's team. Later rules override earlier ones (last match wins).
+
+# org: @acme/payments-platform-team @acme/fraud-team @acme/finance-data-team
+/contracts/schemas/                      @OWNER
+# org: @acme/payments-platform-team
+/contracts/registry.yml                  @OWNER
+# org: @acme/payments-platform-team plus consuming teams (they review value rules)
+/ge/suites/                              @OWNER
+# org: @acme/privacy-office
+/contracts/pii_catalog.yml               @OWNER
+# org: @acme/data-governance (registering a NEW consumer)
+/contracts/lineage/                      @OWNER
+# org: @acme/fraud-team (its ACKs live here)
+/contracts/lineage/fraud-service.yml     @OWNER
+# org: @acme/finance-data-team (its ACKs live here)
+/contracts/lineage/finance-recon.yml     @OWNER
