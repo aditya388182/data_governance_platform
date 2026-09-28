@@ -1,28 +1,4 @@
 #!/usr/bin/env bash
-# scripts/setup_branch_protection.sh <required-check> [<required-check> ...]
-#
-# Makes `main` protected with the given REQUIRED status checks. Idempotent:
-# re-run it whenever a gate is added (the full list replaces the old one).
-#   Day 1:  scripts/setup_branch_protection.sh schema-gate
-#   Day 6:  scripts/setup_branch_protection.sh schema-gate ge-gate pii-gate impact-bot terraform-plan
-#
-# What it sets, and why (Day 1 corrections to the original plan):
-#   * required_status_checks.strict=true + the given contexts. The names must
-#     match workflow JOB names byte-for-byte or protection silently binds nothing.
-#   * enforce_admins=true: you (repo admin) cannot bypass the gate either.
-#   * required_approving_review_count=0 — NOT 1. On a solo account you cannot
-#     approve your own PR, so count=1 + enforce_admins=true means nothing can
-#     ever merge (PR A would be stuck). PRs are still REQUIRED (no direct pushes
-#     to main); the binding constraint is the required checks. A real org adds
-#     2 approvals + "Require review from Code Owners" (documented in the README).
-#   * restrictions=null is sent explicitly: the API requires the key.
-#   * allow_force_pushes=false, allow_deletions=false.
-#   * The body is sent as typed JSON via --input. The original plan's `gh api -f`
-#     call sends "true"/"1" as strings and omits `restrictions` — it fails
-#     validation against GitHub's published OpenAPI schema on 4 counts.
-#
-# Branch protection on a PRIVATE repo needs GitHub Pro (free with the GitHub
-# Student Developer Pack). On GitHub Free, make the repo public.
 set -euo pipefail
 
 [ "$#" -ge 1 ] || { echo "usage: $0 <required-check> [...]" >&2; exit 64; }

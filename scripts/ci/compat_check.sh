@@ -1,24 +1,4 @@
 #!/usr/bin/env bash
-# scripts/ci/compat_check.sh SUBJECT SCHEMA_FILE MODE [HISTORY_DIR]
-#
-# Judges ONE proposed schema against a hermetic Schema Registry.
-#
-#   1. Probe the registry (fail-closed).
-#   2. Replay HISTORY_DIR/*.avsc (oldest -> newest, i.e. every version of the
-#      schema file on main) into a throwaway subject with compatibility NONE.
-#      Without this replay an empty CI registry holds ONE version and
-#      BACKWARD_TRANSITIVE silently collapses to BACKWARD.
-#   3. Set the subject to the contract's declared MODE and read it back
-#      (trust but verify: a mode that did not apply is an infra failure).
-#   4. Register the proposed schema. The registry applies MODE across ALL
-#      prior versions for *_TRANSITIVE modes. 200 = compatible,
-#      409 = breaking, 422 = invalid schema, anything else = FAIL CLOSED.
-#   5. On 409, print a per-version diagnosis (which historical version breaks).
-#   6. Delete the throwaway subject (best-effort; never changes the verdict).
-#
-# Exit codes: 0 compatible | 1 breaking or invalid | 2 registry unavailable/error (FAILING CLOSED)
-# Subjects are namespaced with GATE_SUBJECT_PREFIX (default gate.<pid>.<epoch>.)
-# so a local run can never touch a real subject.
 set -euo pipefail
 
 SUBJECT_IN="${1:?usage: compat_check.sh SUBJECT SCHEMA_FILE MODE [HISTORY_DIR]}"

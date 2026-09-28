@@ -1,16 +1,3 @@
-# infra/ci/registry-compose.yml — the HERMETIC registry used by the schema gate.
-#
-# One definition, two users: the GitHub Actions job AND your local gate/drill
-# runs start exactly this stack, so "works locally" and "works in CI" mean the
-# same thing. It has zero dependency on any shared/production registry.
-#
-# Host port 18081 (not 8081) so it can run next to the dev stack in
-# infra/docker-compose.yml without colliding, and so a local gate run can never
-# write into your dev registry by accident.
-#
-# Changing this file is a gate-infrastructure change: the schema-gate job
-# re-runs its self-test against every dataset (that is how the Day 1
-# fail-closed sabotage PR exercises the gate).
 name: schema-gate-registry
 
 services:
