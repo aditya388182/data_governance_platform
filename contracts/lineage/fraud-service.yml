@@ -1,0 +1,13 @@
+# fraud-service's registration as a consumer (Project 4, Stage 2).
+#
+# Owned by the CONSUMER team via CODEOWNERS: in an organization only @fraud-team can
+# approve changes to this file, which is what makes an ACK below a real sign-off.
+consumer: fraud-service
+team: "@fraud-team"
+repo: consumers/fraud-service        # vendored stand-in; production: https://github.com/<org>/fraud-service
+reads:
+  - payments.transactions    # Kafka subject via from_avro (streaming features)
+# acks: PR number -> sign-offs for field removals in THAT PR. impact-bot reads acks
+# from main only, so an ACK counts once this file's change has merged.
+# Add one with: python scripts/ack.py fraud-service --pr <N> --fields <f1,f2> --reason "..."
+acks: {}

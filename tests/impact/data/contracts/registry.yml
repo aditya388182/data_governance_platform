@@ -1,0 +1,44 @@
+# contracts/registry.yml — the contract registry (Project 4, Stage 0)
+#
+# A contract is metadata, not just a schema file. Every governed dataset
+# declares its owner, SLA, compatibility mode, semantic suite and lake path.
+#
+# The compatibility mode is part of the contract: declared by the owner and
+# enforced by machinery (scripts/ci/schema_gate.sh reads it; nothing is
+# hardcoded in the workflow).
+#
+# The gate enforces the mode AS DECLARED ON main (the contract in force).
+# A PR that edits `compatibility:` gets a warning and is still judged by the
+# old mode, so nobody can weaken the mode and ship a breaking change in the
+# same diff. A mode change takes effect only after it merges on its own.
+#
+# fixture: the committed, anonymized CI sample the semantic gate (ge-gate)
+# validates. It is the producer's declared sample output: a producer that changes
+# what it emits regenerates it (scripts/make_fixture.py) in the same PR.
+#
+# The catalog table name of a dataset is the last segment of its delta_path
+# (transactions, customers): pii_catalog.yml keys are "<table>.<column>".
+#
+# delta_path values are CANONICAL. Every later component (consumers,
+# lineage.json, seed, checkpoints, erasure) must reference these exact strings.
+version: 1
+datasets:
+  payments.transactions:
+    schema: contracts/schemas/payments_transactions.avsc
+    subject: payments.public.transactions-value
+    owner: payments-platform-team
+    sla: "p99 freshness < 60s; schema changes require consumer ACK"
+    compatibility: BACKWARD_TRANSITIVE
+    ge_suite: ge/suites/payments_transactions.yml
+    delta_path: s3a://governance-lake/transactions
+    fixture: fixtures/payments_transactions_sample.parquet
+
+  customers:
+    schema: contracts/schemas/customers.avsc
+    subject: crm.public.customers-value
+    owner: customer-data-team
+    sla: "daily completeness by 06:00 UTC; PII encrypted at write"
+    compatibility: BACKWARD_TRANSITIVE
+    ge_suite: ge/suites/customers.yml
+    delta_path: s3a://governance-lake/customers
+    fixture: fixtures/customers_sample.parquet
