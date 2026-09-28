@@ -20,3 +20,5 @@
 /contracts/lineage/fraud-service.yml     @aditya388182
 # org: @acme/finance-data-team (its ACKs live here)
 /contracts/lineage/finance-recon.yml     @aditya388182
+# org: @acme/marketing-analytics (its ACKs live here)
+/contracts/lineage/marketing-etl.yml     @aditya388182
