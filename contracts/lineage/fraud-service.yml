@@ -10,4 +10,11 @@ reads:
 # acks: PR number -> sign-offs for field removals in THAT PR. impact-bot reads acks
 # from main only, so an ACK counts once this file's change has merged.
 # Add one with: python scripts/ack.py fraud-service --pr <N> --fields <f1,f2> --reason "..."
-acks: {}
+acks:
+  '5':
+  - fields:
+    - status
+    by: '@fraud-team'
+    reason: status is informational in our scoring model; fraud-service stops reading
+      it in its next release
+    date: '2026-09-28'
