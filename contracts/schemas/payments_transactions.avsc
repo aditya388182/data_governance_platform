@@ -9,7 +9,6 @@
     {"name": "customer_id", "type": "string", "doc": "Data-subject key for erasure (Day 4/5)"},
     {"name": "amount_minor", "type": "long", "doc": "Minor units; >= 0 enforced by the GE suite"},
     {"name": "currency", "type": "string", "doc": "ISO-4217 alpha-3"},
-    {"name": "status", "type": "string", "default": "PENDING"},
     {"name": "event_type", "type": {"type": "enum", "name": "EventType", "symbols": ["AUTHORIZED", "CAPTURED", "SETTLED", "REFUNDED", "REVERSED"]}},
     {"name": "event_ts", "type": {"type": "long", "logicalType": "timestamp-millis"}},
     {"name": "created_at", "type": {"type": "long", "logicalType": "timestamp-millis"}},

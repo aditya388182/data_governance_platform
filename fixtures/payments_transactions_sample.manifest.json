@@ -60,5 +60,5 @@
   "token_format": "hex(HMAC-SHA256(fixtures_key, '<column>:<value>'))",
   "fixtures_key_fingerprint": "1d27c8d08265",
   "avro_valid_rows": 2005,
-  "content_sha256": "f5b961ae835a9520bc3721e69ba226ec41754a9e3dbfdb724e88c68f874bc511"
+  "content_sha256": "9a95bb03955b747673bd5af8ae676c7ab151fb520ca58d9c9dec3dbbd627463b"
 }
