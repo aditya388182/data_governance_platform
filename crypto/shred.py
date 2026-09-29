@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import os
+import threading
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -19,12 +20,14 @@ class NonceGuard:
 
     def __init__(self) -> None:
         self._seen: set[tuple[bytes, bytes]] = set()
+        self._lock = threading.Lock()      # check-then-add must be atomic across threads 
 
     def check(self, key: bytes, nonce: bytes) -> None:
         kid = hashlib.sha256(b"kid:" + key).digest()[:8]
-        if (kid, nonce) in self._seen:
-            raise NonceReuse("AES-GCM nonce reused under the same key — refusing to encrypt")
-        self._seen.add((kid, nonce))
+        with self._lock:
+            if (kid, nonce) in self._seen:
+                raise NonceReuse("AES-GCM nonce reused under the same key — refusing to encrypt")
+            self._seen.add((kid, nonce))
 
 
 _GUARD = NonceGuard()
