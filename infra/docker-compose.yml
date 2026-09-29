@@ -1,3 +1,29 @@
+#   kafka            KRaft, dual listener: kafka:9092 (containers) / localhost:29092 (host)
+#   schema-registry  localhost:8081 — the RUNTIME registry (producers, Day 4+)
+#   minio            localhost:9000 (S3 API) / :9001 (console)
+#   minio-init       one-shot (retries until MinIO is up): creates buckets governance-lake, backups
+#   localstack       localhost:4566 — S3 + DynamoDB for Terraform remote state (Day 6)
+#
+# The schema GATE does not use this stack; it uses infra/ci/registry-compose.yml
+# (port 18081).
+#
+# IMAGE NOTES (re-checked Sept 26 2026 — MinIO distribution changed twice this month):
+#  * MinIO: minio/minio + minio/mc were removed from Docker Hub (~Sept 12), and
+#    quay.io/minio/* went private on Sept 24 (anonymous pulls: 401 on EVERY tag
+#    and digest). We use Chainguard's free builds of upstream MinIO:
+#      cgr.dev/chainguard/minio         (entrypoint: minio)
+#      cgr.dev/chainguard/minio-client  (entrypoint: mc)
+#    Both are distroless: no shell, no curl, no mc inside the server image. So
+#    there is no in-container healthcheck; minio-init retries until MinIO
+#    answers, and scripts/verify_stack.sh probes health from the host.
+#    Free tier serves `latest` only — pin by digest after the first pull
+#    (see docs/decisions.md D11). Override with MINIO_IMAGE / MINIO_MC_IMAGE.
+#  * LocalStack: since 2026.03.0 the latest image requires LOCALSTACK_AUTH_TOKEN.
+#    We pin an older community tag (no token). If that pull fails, get a free
+#    Hobby/Student token and run with:
+#      LOCALSTACK_IMAGE=localstack/localstack:latest LOCALSTACK_AUTH_TOKEN=... docker compose ...
+#
+# Memory-tuned for a 16 GB machine (Docker Desktop: allocate >= 8 GB).
 name: governance-dev
 
 services:
@@ -71,7 +97,9 @@ services:
     # starting, and restart: on-failure retries until it succeeds (exit 0).
     environment:
       MC_HOST_gov: "http://minioadmin:minioadmin123@minio:9000"
-    command: ["--config-dir", "/tmp/.mc", "mb", "--ignore-existing", "gov/governance-lake", "gov/backups"]
+    # + keystore — the DEK table lives in its own bucket so Day 5's backup
+    # (which copies governance-lake) never contains wrapped keys (F3).
+    command: ["--config-dir", "/tmp/.mc", "mb", "--ignore-existing", "gov/governance-lake", "gov/backups", "gov/keystore"]
     restart: "on-failure:30"
 
   localstack:
@@ -85,18 +113,24 @@ services:
     volumes:
       - localstack-data:/var/lib/localstack
 
-  # ---- Day 4 / Day 6: uncomment when those stages begin ----------------------
-  # prometheus:
-  #   image: prom/prometheus:v2.53.0
-  #   container_name: gov-prometheus
-  #   ports: ["9090:9090"]
-  #   volumes:
-  #     - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-  #     - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
-  # pushgateway:
-  #   image: prom/pushgateway:v1.9.0
-  #   container_name: gov-pushgateway
-  #   ports: ["9091:9091"]
+  #  runtime alerting (Pushgateway <- checkpoint jobs; Prometheus evaluates alerts) 
+  pushgateway:
+    image: prom/pushgateway:v1.11.3
+    container_name: gov-pushgateway
+    ports: ["9091:9091"]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    container_name: gov-prometheus
+    depends_on: [pushgateway]
+    ports: ["9090:9090"]
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    restart: unless-stopped
+
+  
   # grafana:
   #   image: grafana/grafana:11.1.0
   #   container_name: gov-grafana

@@ -18,5 +18,5 @@ def build_features(spark: SparkSession) -> DataFrame:
     payload = raw.select(expr("substring(value, 6, length(value) - 5)").alias("avro_value"))
     events = payload.select(from_avro(col("avro_value"), value_schema).alias("e"))
     features = events.select("e.transaction_id", "e.merchant_id", "e.customer_id",
-                             "e.currency", "e.amount_minor", "e.event_type", "e.event_ts")
-    return features.where(col("event_type") != "REVERSED")
+                             "e.currency", "e.amount_minor", "e.status", "e.event_ts")
+    return features.where(col("status") != "DECLINED")

@@ -23,6 +23,7 @@ class ExpectationResult:
     unexpected_count: int | None
     sample: list = field(default_factory=list)
     error: str | None = None
+    unexpected_index_list: list | None = None     # row positions; only with result_format="COMPLETE"
 
 
 def load_suite_doc(path: str | Path) -> dict:
@@ -62,7 +63,10 @@ def _context():
     return EphemeralDataContext(project_config=cfg)
 
 
-def validate(df, suite_doc: dict, engine: str = "pandas") -> list[ExpectationResult]:
+def validate(df, suite_doc: dict, engine: str = "pandas", result_format: str = "SUMMARY") -> list[ExpectationResult]:
+    """result_format="COMPLETE" (Day 4 runtime checkpoints) also returns the positions of
+    every unexpected row, so quarantine can copy exactly the offending rows. CI gates keep
+    SUMMARY. The frame must have a default RangeIndex (positions == index labels)."""
     from great_expectations.core import ExpectationConfiguration, ExpectationSuite
     ctx = _context()
     configs = [ExpectationConfiguration(expectation_type=e["expectation_type"], kwargs=e.get("kwargs") or {},
@@ -70,11 +74,13 @@ def validate(df, suite_doc: dict, engine: str = "pandas") -> list[ExpectationRes
     suite = ExpectationSuite(expectation_suite_name=suite_doc["expectation_suite_name"], expectations=configs,
                              meta=suite_doc.get("meta") or {})
     if engine != "pandas":
-        # Day 4 adds the Spark path for runtime checkpoints over live Delta tables.
-        # Not shipped yet on purpose: untested code does not go into a gate.
-        raise NotImplementedError(f"engine '{engine}' arrives on Day 4")
+        # decision (D45): runtime checkpoints read Delta with delta-rs into pandas;
+        # a Spark engine is the production path for large tables, not needed at this scale.
+        raise NotImplementedError(f"engine '{engine}' is not supported (see docs/decisions_day4.md D45)")
+    if result_format not in ("SUMMARY", "COMPLETE"):
+        raise ValueError("result_format must be SUMMARY or COMPLETE")
     validator = ctx.sources.pandas_default.read_dataframe(df)
-    res = validator.validate(expectation_suite=suite, result_format={"result_format": "SUMMARY", "partial_unexpected_count": 5},
+    res = validator.validate(expectation_suite=suite, result_format={"result_format": result_format, "partial_unexpected_count": 5},
                              catch_exceptions=True)
     # map results back to suite order
     out: list[ExpectationResult] = []
@@ -99,5 +105,18 @@ def validate(df, suite_doc: dict, engine: str = "pandas") -> list[ExpectationRes
                     err = str(nested[0].get("exception_message"))[:200]
         r = match.result or {}
         out.append(ExpectationResult(i, cfg.expectation_type, _target(cfg.kwargs), bool(match.success),
-                                     r.get("unexpected_count"), list(r.get("partial_unexpected_list") or [])[:5], err))
+                                     r.get("unexpected_count"), list(r.get("partial_unexpected_list") or [])[:5], err,
+                                     _positions(r.get("unexpected_index_list")) if result_format == "COMPLETE" else None))
     return out
+
+
+def _positions(idx) -> list[int] | None:
+    """GE 0.18 returns unexpected_index_list as ints, or as dicts like {"index": 3}."""
+    if idx is None:
+        return None
+    out = []
+    for v in idx:
+        if isinstance(v, dict):
+            v = v.get("index", next(iter(v.values()), None))
+        out.append(int(v))
+    return sorted(set(out))

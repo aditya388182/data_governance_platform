@@ -1,0 +1,9 @@
+# non-secret runtime locations . Committed.
+# Secrets live in conf/keys.yml (gitignored). Every value can be overridden by env.
+lake:
+  endpoint: http://localhost:9000            # MinIO from infra/docker-compose.yml   (LAKE_ENDPOINT)
+  region: us-east-1                          #                                        (LAKE_REGION)
+  # credentials: LAKE_ACCESS_KEY / LAKE_SECRET_KEY, default = the compose's local-only minioadmin pair
+key_store: s3a://keystore/dek_store          # its OWN bucket:  backup copies governance-lake only (F3)
+quarantine_root: s3a://governance-lake/quarantine   # one append-only Delta table per dataset
+pushgateway: http://localhost:9091           #                                        (PUSHGATEWAY_URL)
