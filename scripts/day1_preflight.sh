@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# scripts/day1_preflight.sh — run BEFORE anything else on Day 1.
-# Checks every tool, version, credential scope, port and resource the day needs.
-# Exit 0 = go. Exit 1 = at least one FAIL (fix it first; each FAIL prints the fix).
-# Portable: macOS (bash 3.2) and Ubuntu.
-# shellcheck disable=SC2015  # pass/ok/warn always return 0, so A && B || C is a safe if-else here
 set -uo pipefail
 
 FAILS=0; WARNS=0
