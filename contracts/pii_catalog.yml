@@ -26,7 +26,8 @@ columns:
   customers.email:          {class: DIRECT_IDENTIFIER, treatment: ENCRYPT_AESGCM}
   customers.ssn:            {class: DIRECT_IDENTIFIER, treatment: TOKENIZE_HMAC}
   customers.full_name:      {class: DIRECT_IDENTIFIER, treatment: ENCRYPT_AESGCM}
-  transactions.merchant_id: {class: QUASI_IDENTIFIER,  treatment: TOKENIZE_HMAC}
+  transactions.merchant_id: {class: QUASI_IDENTIFIER,  treatment: TOKENIZE_HMAC, key_scope: PLATFORM}   # F4: joinable across customers
+  transactions.receipt_email: {class: DIRECT_IDENTIFIER, treatment: ENCRYPT_AESGCM}
 
 detection:
   # Case-insensitive regexes searched in each top-level Avro field name.
