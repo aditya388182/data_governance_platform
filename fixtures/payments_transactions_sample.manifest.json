@@ -55,10 +55,11 @@
   "rows": 2005,
   "anonymized_columns": [
     "customer_id",
-    "merchant_id"
+    "merchant_id",
+    "receipt_email"
   ],
   "token_format": "hex(HMAC-SHA256(fixtures_key, '<column>:<value>'))",
   "fixtures_key_fingerprint": "1d27c8d08265",
   "avro_valid_rows": 2005,
-  "content_sha256": "f5b961ae835a9520bc3721e69ba226ec41754a9e3dbfdb724e88c68f874bc511"
+  "content_sha256": "b458fbf587505f3cdcd719e1a15f0322921ebc7853f4c824536bc5f7687572aa"
 }
