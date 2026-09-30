@@ -75,6 +75,14 @@
       ],
       "default": null,
       "doc": "Fraud-model score; nullable with default so every older record stays readable"
+    },
+    {
+      "name": "receipt_email",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
     }
   ]
 }
