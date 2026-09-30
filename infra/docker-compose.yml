@@ -97,7 +97,7 @@ services:
     # starting, and restart: on-failure retries until it succeeds (exit 0).
     environment:
       MC_HOST_gov: "http://minioadmin:minioadmin123@minio:9000"
-    # + keystore — the DEK table lives in its own bucket so Day 5's backup
+    # Day 4: + keystore — the DEK table lives in its own bucket so Day 5's backup
     # (which copies governance-lake) never contains wrapped keys (F3).
     command: ["--config-dir", "/tmp/.mc", "mb", "--ignore-existing", "gov/governance-lake", "gov/backups", "gov/keystore"]
     restart: "on-failure:30"
@@ -113,7 +113,7 @@ services:
     volumes:
       - localstack-data:/var/lib/localstack
 
-  #  runtime alerting (Pushgateway <- checkpoint jobs; Prometheus evaluates alerts) 
+
   pushgateway:
     image: prom/pushgateway:v1.11.3
     container_name: gov-pushgateway
@@ -130,12 +130,20 @@ services:
       - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
     restart: unless-stopped
 
-  
-  # grafana:
-  #   image: grafana/grafana:11.1.0
-  #   container_name: gov-grafana
-  #   ports: ["3000:3000"]
-  #   environment: { GF_SECURITY_ADMIN_PASSWORD: admin }
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: gov-grafana
+    depends_on: [prometheus]
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/governance_health.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
 
 volumes:
   minio-data:
