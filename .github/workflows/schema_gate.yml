@@ -62,7 +62,7 @@ jobs:
 
       - name: Self-test gate control flow (mock registry, no Docker)
         if: steps.detect.outputs.run == 'true'
-        run: echo "Skipping brittle self-tests"
+        run: python -m pytest -q tests/gate
 
       - name: Start hermetic Schema Registry (no production dependency)
         if: steps.detect.outputs.run == 'true'

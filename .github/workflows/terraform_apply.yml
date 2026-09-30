@@ -1,0 +1,46 @@
+name: terraform-apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'terraform/**'
+      - 'contracts/registry.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-apply:
+    name: terraform-apply
+    runs-on: ubuntu-24.04
+    environment: production
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          
+      - name: "Install dependencies"
+        run: pip install boto3 requests
+        
+      - name: "Install Terraform"
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+          terraform_wrapper: false
+          
+      - name: "Start ephemeral stack"
+        run: docker compose -f infra/docker-compose.yml up -d localstack schema-registry kafka minio
+        
+      - name: "Apply Workspaces"
+        run: |
+          python scripts/tf_localstack.py bootstrap
+          cd terraform
+          terraform init
+          for ws in dev staging prod; do
+            terraform workspace select $ws || terraform workspace new $ws
+            terraform apply -auto-approve
+          done

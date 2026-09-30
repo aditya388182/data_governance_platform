@@ -1,0 +1,21 @@
+name: platform-tests
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  platform-tests:
+    name: platform-tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: "Install dependencies"
+        run: pip install -r requirements-ci-platform.txt
+      - name: "Run platform tests"
+        run: python -m pytest -q tests/crypto tests/runtime tests/erasure tests/infra
