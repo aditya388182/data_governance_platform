@@ -1,0 +1,62 @@
+name: terraform-plan
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: terraform-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  terraform-plan:
+    name: terraform-plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: "Detect changes"
+        id: detect
+        run: scripts/ci/terraform_gate.sh detect "$BASE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: "Nothing to check"
+        if: steps.detect.outputs.run == 'false'
+        run: echo "No changes to Terraform infrastructure."
+
+      - name: "Set up Python"
+        if: steps.detect.outputs.run == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: "Install dependencies"
+        if: steps.detect.outputs.run == 'true'
+        run: pip install boto3 requests
+
+      - name: "Install Terraform"
+        if: steps.detect.outputs.run == 'true'
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+          terraform_wrapper: false
+
+      - name: "Start ephemeral stack"
+        if: steps.detect.outputs.run == 'true'
+        run: docker compose -f infra/docker-compose.yml up -d localstack schema-registry kafka minio
+
+      - name: "Run Terraform Gate"
+        if: steps.detect.outputs.run == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: scripts/ci/terraform_gate.sh check "$BASE_SHA"
