@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  apply:
-    name: apply
+  terraform-apply:
+    name: terraform-apply
     runs-on: ubuntu-24.04
     environment: production
     steps:
